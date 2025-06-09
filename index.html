@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Fluorescence Microscope Filter Cube - Cy5 Example</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Cy5 Example: Excitation (Red), Emission (Far-Red) */
+            --light-source: #FFD700; /* White/Yellow Light Source */
+            --excitation-light: #FF0000; /* Red light for Cy5 excitation */
+            --emission-light: #A50021; /* Far-Red light for Cy5 emission */
+            --bg-color: #111827;
+            --text-color: #f3f4f6;
+            --border-color: #374151;
+            --label-color: #9ca3af;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .diagram-container {
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 4 / 3;
+            position: relative;
+            background-color: #1f2937;
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            overflow: hidden;
+        }
+
+        .component {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+            background-color: #374151;
+            color: var(--text-color);
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            padding: 2px;
+        }
+
+        #light-source { top: 35%; left: 2%; width: 12%; height: 15%; }
+        #excitation-filter { top: 37.5%; left: 20%; width: 3%; height: 10%; background-color: var(--excitation-light); border-color: var(--excitation-light); }
+        #dichroic-mirror { top: 35.5%; left: 35%; width: 14%; height: 3%; transform: rotate(45deg); background-color: #9ca3af; }
+        #objective-lens { top: 60%; left: 37%; width: 10%; height: 8%; border-radius: 50% 50% 0.375rem 0.375rem; }
+        #sample { top: 75%; left: 34.5%; width: 15%; height: 5%; background-color: #4b5563; }
+        #emission-filter { top: 12%; left: 42.5%; width: 10%; height: 3%; background-color: var(--emission-light); border-color: var(--emission-light); }
+        #detector { top: 2%; left: 40%; width: 15%; height: 8%; }
+
+        .label {
+            position: absolute;
+            font-size: 0.75rem;
+            color: var(--label-color);
+            text-align: center;
+        }
+
+        .light-path {
+            position: absolute;
+            background-color: transparent;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        .light-beam {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #path1 { top: 41.5%; left: 14%; width: 6%; height: 2%; }
+        #path1 .light-beam { background-color: var(--light-source); box-shadow: 0 0 8px var(--light-source); }
+
+        #path2 { top: 41.5%; left: 23%; width: 14%; height: 2%; }
+        #path2 .light-beam { background-color: var(--excitation-light); box-shadow: 0 0 8px var(--excitation-light); }
+
+        #path3 { top: 45.5%; left: 41.5%; width: 2%; height: 29.5%; }
+        #path3 .light-beam { background-color: var(--excitation-light); box-shadow: 0 0 8px var(--excitation-light); }
+        
+        #path4 { top: 45.5%; left: 41.5%; width: 2%; height: 29.5%; }
+        #path4 .light-beam { background-color: var(--emission-light); box-shadow: 0 0 10px var(--emission-light); }
+
+        #path5 { top: 15%; left: 44.5%; width: 2%; height: 20%;}
+        #path5 .light-beam { background-color: var(--emission-light); box-shadow: 0 0 10px var(--emission-light); }
+
+        #path6 { top: 10%; left: 44.5%; width: 2%; height: 2%; }
+        #path6 .light-beam { background-color: var(--emission-light); box-shadow: 0 0 10px var(--emission-light); }
+        
+        .glow {
+            animation: glow-animation 1.5s infinite alternate;
+        }
+
+        @keyframes glow-animation {
+            from { box-shadow: 0 0 10px #333, 0 0 20px #444, inset 0 0 5px #222; }
+            to { box-shadow: 0 0 20px var(--emission-light), 0 0 30px var(--emission-light), inset 0 0 10px var(--emission-light); }
+        }
+
+        .info-panel {
+            min-height: 120px;
+            background-color: #1f2937;
+            border: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-4xl mx-auto">
+        <h1 class="text-2xl sm:text-3xl font-bold text-center mb-2 text-white">Interactive Fluorescence Microscope</h1>
+        <p class="text-center text-gray-400 mb-6">A step-by-step guide using a <strong>Cy5 filter cube</strong> as a real-world example.</p>
+
+        <div class="diagram-container shadow-2xl mx-auto">
+            <!-- Components -->
+            <div id="light-source" class="component">Light Source</div>
+            <div id="excitation-filter" class="component"></div>
+            <div id="dichroic-mirror" class="component"></div>
+            <div id="objective-lens" class="component">Objective Lens</div>
+            <div id="sample" class="component">Sample (with Cy5)</div>
+            <div id="emission-filter" class="component"></div>
+            <div id="detector" class="component">Detector / Camera</div>
+
+            <!-- Labels -->
+            <div class="label" style="top: 31%; left: 16%;">Excitation Filter</div>
+            <div class="label" style="top: 54%; left: 24%; transform: rotate(45deg);">Dichroic Mirror</div>
+            <div class="label" style="top: 18%; left: 53%;">Emission Filter</div>
+
+            <!-- Light Paths -->
+            <div id="path1" class="light-path"><div class="light-beam"></div></div>
+            <div id="path2" class="light-path"><div class="light-beam"></div></div>
+            <div id="path3" class="light-path"><div class="light-beam"></div></div>
+            <div id="path4" class="light-path"><div class="light-beam"></div></div>
+            <div id="path5" class="light-path"><div class="light-beam"></div></div>
+            <div id="path6" class="light-path"><div class="light-beam"></div></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="flex justify-center items-center space-x-4 mt-6">
+             <button id="prev-btn" class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -ml-1 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                Previous
+            </button>
+            <button id="reset-btn" class="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" /></svg>
+            </button>
+            <button id="next-btn" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed">
+                Next
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 inline-block -mr-1 ml-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" /></svg>
+            </button>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="w-full max-w-4xl mx-auto mt-6 p-4 rounded-lg info-panel">
+            <h3 id="info-title" class="font-bold text-lg mb-2"></h3>
+            <p id="info-text" class="text-gray-300 transition-opacity duration-500"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const nextBtn = document.getElementById('next-btn');
+            const prevBtn = document.getElementById('prev-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const infoTitle = document.getElementById('info-title');
+            const infoText = document.getElementById('info-text');
+            const sample = document.getElementById('sample');
+            
+            const steps = [
+                { title: 'Step 1: Light Source', text: 'A lamp or laser emits broad-spectrum light (many colors).', show: ['path1'] },
+                { title: 'Step 2: Excitation Filter', text: 'The filter isolates the specific wavelength needed to excite Cy5. For Cy5, this is red light with a peak wavelength around <strong>649 nm</strong>.', show: ['path1', 'path2'] },
+                { title: 'Step 3: Dichroic Mirror (Reflection)', text: 'The dichroic mirror is designed to reflect light below a certain wavelength. It reflects the <strong>~649 nm</strong> excitation light down towards the sample.', show: ['path1', 'path2', 'path3'] },
+                { title: 'Step 4: Sample Excitation', text: 'The Cy5 fluorophores in the sample absorb the <strong>~649 nm</strong> light. This absorption excites the electrons in the dye to a higher energy state.', show: ['path1', 'path2', 'path3'], glow: true },
+                { title: 'Step 5: Fluorescence Emission', text: 'As the electrons relax, Cy5 emits light at a longer, lower-energy wavelength. This is the fluorescence signal, with a peak around <strong>~670 nm</strong> (far-red light).', show: ['path4'], glow: true },
+                { title: 'Step 6: Dichroic Mirror (Transmission)', text: 'The emitted <strong>~670 nm</strong> light travels back to the dichroic mirror. Because this wavelength is longer, the mirror allows it to pass through.', show: ['path4', 'path5'], glow: true },
+                { title: 'Step 7: Emission Filter', text: 'The emission filter provides a final cleanup, blocking any stray excitation light that may have reflected back, ensuring only the <strong>~670 nm</strong> Cy5 signal passes.', show: ['path4', 'path5', 'path6'], glow: true },
+                { title: 'Step 8: Detection', text: 'The purified far-red fluorescent light reaches the detector or camera, which captures the signal to form the final image.', show: ['path4', 'path5', 'path6'], glow: true, final: true }
+            ];
+            
+            let currentStep = -1;
+
+            function updateInfo(title, text) {
+                infoTitle.style.opacity = '0';
+                infoText.style.opacity = '0';
+                setTimeout(() => {
+                    infoTitle.textContent = title;
+                    infoText.innerHTML = text; // Use innerHTML to render bold tags
+                    infoTitle.style.opacity = '1';
+                    infoText.style.opacity = '1';
+                }, 300);
+            }
+
+            function renderStep(stepIndex) {
+                // Hide all paths and remove glow first
+                document.querySelectorAll('.light-path').forEach(p => p.style.opacity = '0');
+                sample.classList.remove('glow');
+
+                if (stepIndex < 0) {
+                    updateInfo("Introduction", "This diagram shows how a filter cube isolates and directs light in a fluorescence microscope. Click 'Next' to begin.");
+                    return;
+                }
+
+                const step = steps[stepIndex];
+                updateInfo(step.title, step.text);
+
+                step.show.forEach(pathId => {
+                    document.getElementById(pathId).style.opacity = '1';
+                });
+
+                if (step.glow) {
+                    sample.classList.add('glow');
+                }
+            }
+            
+            function updateButtons() {
+                prevBtn.disabled = currentStep <= -1;
+                nextBtn.disabled = currentStep >= steps.length - 1;
+
+                if(currentStep === -1) prevBtn.disabled = true;
+            }
+
+            function resetSimulation() {
+                currentStep = -1;
+                renderStep(currentStep);
+                updateButtons();
+            }
+
+            nextBtn.addEventListener('click', () => {
+                if (currentStep < steps.length - 1) {
+                    currentStep++;
+                    renderStep(currentStep);
+                    updateButtons();
+                }
+            });
+
+            prevBtn.addEventListener('click', () => {
+                if (currentStep > -1) {
+                    currentStep--;
+                    renderStep(currentStep);
+                    updateButtons();
+                } else if(currentStep === 0) {
+                    currentStep--;
+                    resetSimulation();
+                }
+            });
+            
+            resetBtn.addEventListener('click', resetSimulation);
+
+            // Initial state
+            resetSimulation();
+        });
+    </script>
+</body>
+</html>
